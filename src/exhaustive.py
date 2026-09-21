@@ -29,6 +29,21 @@ class. This is a direct, if unsophisticated, instance of the standard
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Discover the project root and insert it in sys.path so the package can be imported
+# regardless of how the notebook was launched.
+project_root = Path.cwd().resolve()
+while not (project_root / "src").exists() and project_root != project_root.parent:
+    project_root = project_root.parent
+
+if not (project_root / "src").exists():
+    raise FileNotFoundError("Could not find the src folder from the current working directory.")
+
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 import functools
 import itertools
 import math
@@ -225,7 +240,6 @@ def _forest_pruned_spherical_count(n: int) -> int:
             if is_spherical(M):
                 total += 1
     return total
-
 
 if __name__ == "__main__":
     for n in range(1, 7):
