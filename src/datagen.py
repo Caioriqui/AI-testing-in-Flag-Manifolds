@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from coxeter import (
+from src.coxeter import (
     LABELS,
     NO_EDGE,
     connected_components,

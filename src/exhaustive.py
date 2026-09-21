@@ -37,7 +37,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from coxeter import (
+from src.coxeter import (
     LABELS,
     canonical_codes_and_automorphisms_batch,
     diagram_from_edges,
