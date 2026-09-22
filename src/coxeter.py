@@ -137,6 +137,25 @@ def spherical_margin(M: np.ndarray) -> float:
     return float(np.linalg.eigvalsh(A).min())
 
 
+def spherical_margin_and_test(M: np.ndarray, tol: float = 1e-8) -> tuple[float, bool]:
+    """(spherical_margin(M), is_spherical(M, tol)), from a SINGLE eigen-
+    decomposition.
+
+    `is_spherical` and `spherical_margin` each call `cartan_matrix` +
+    `np.linalg.eigvalsh` independently, so a caller needing both values --
+    e.g. env.py's `step`, once per environment per environment-step, the
+    hottest loop in the whole package -- would otherwise pay for that
+    decomposition twice per call for no reason. The semantics here are
+    exactly those of calling both functions separately with the same
+    `tol`; this is a performance shortcut, not a new definition, and
+    `is_spherical`/`spherical_margin` remain the source of truth for every
+    non-hot-loop caller (exhaustive search, data generation, analysis).
+    """
+    A = cartan_matrix(M)
+    margin = float(np.linalg.eigvalsh(A).min())
+    return margin, margin > tol
+
+
 # --------------------------------------------------------------------------- #
 # Graph utilities (union-find, components, acyclicity)
 # --------------------------------------------------------------------------- #
@@ -404,5 +423,15 @@ if __name__ == "__main__":
     _, aut_d4 = canonical_code_and_automorphisms(D4)
     assert aut_d4 == 6
     assert orbit_size(D4) == math.factorial(4) // 6 == 4
+
+    # spherical_margin_and_test must agree EXACTLY with calling
+    # spherical_margin and is_spherical separately, on both a spherical and
+    # a non-spherical example -- it is a performance shortcut, not a
+    # different definition.
+    for M_check in (A3, A2_affine, D4, dense_cycle):
+        margin_combined, success_combined = spherical_margin_and_test(M_check)
+        assert margin_combined == spherical_margin(M_check)
+        assert success_combined == is_spherical(M_check)
+    print("spherical_margin_and_test: agrees with spherical_margin + is_spherical")
 
     print("coxeter.py: all sanity checks passed.")
