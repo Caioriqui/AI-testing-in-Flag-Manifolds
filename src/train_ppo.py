@@ -75,6 +75,7 @@ the rest of the project's convention (env.py, datagen.py both use
 global mutable state that the legacy `np.random.seed` / `np.random.shuffle`
 pair relies on.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -91,6 +92,9 @@ if not (project_root / "src").exists():
     project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
+
+import os
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE") #Stops library conflict error on Windows
 
 import numpy as np
 import torch
