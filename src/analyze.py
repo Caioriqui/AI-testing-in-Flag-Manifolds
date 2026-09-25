@@ -40,7 +40,6 @@ if str(project_root) not in sys.path:
 
 import numpy as np
 import torch
-from torch.distributions import Categorical
 
 from src.coxeter import NO_EDGE, UnionFind, diagram_from_edges, edge_list, is_spherical
 from src.env import N_DEFAULT, DynkinEnv
@@ -67,7 +66,12 @@ def load_checkpoint(path, device: str = "cpu") -> tuple[DynkinGNN, dict]:
     return model, cfg
 
 
-def rollout_episode(model: DynkinGNN, env: DynkinEnv, deterministic: bool = False) -> dict:
+def rollout_episode(
+    model: DynkinGNN,
+    env: DynkinEnv,
+    deterministic: bool = False,
+    generator: Optional[torch.Generator] = None,
+) -> dict:
     """Run one episode with `model` acting in `env`. `deterministic=True`
     takes the argmax action at every step (useful for a clean demo);
     `deterministic=False` samples, matching what the agent actually saw
@@ -84,7 +88,8 @@ def rollout_episode(model: DynkinGNN, env: DynkinEnv, deterministic: bool = Fals
             if deterministic:
                 action = int(torch.argmax(logits, dim=-1).item())
             else:
-                action = int(Categorical(logits=logits).sample().item())
+                probabilities = torch.softmax(logits, dim=-1)
+                action = int(torch.multinomial(probabilities, num_samples=1, generator=generator).item())
 
             state, _reward, terminated, truncated, info = env.step(action)
             states.append(state.copy())
@@ -108,13 +113,18 @@ def evaluate(
     deterministic: bool = False,
 ) -> dict:
     """Roll out `n_episodes` fresh episodes and summarise success."""
+    if n_episodes <= 0:
+        raise ValueError(f"n_episodes must be positive, got {n_episodes}")
+
     env = DynkinEnv(n=n, max_steps=max_episode_steps, dataset=dataset, seed=seed)
+    generator = torch.Generator(device=next(model.parameters()).device)
+    generator.manual_seed(seed)
     n_success = 0
     steps_to_success: list[int] = []
     final_diagrams: list[np.ndarray] = []
 
     for _ in range(n_episodes):
-        traj = rollout_episode(model, env, deterministic=deterministic)
+        traj = rollout_episode(model, env, deterministic=deterministic, generator=generator)
         if traj["success"]:
             n_success += 1
             steps_to_success.append(traj["n_steps"])
@@ -209,10 +219,10 @@ def _classify_component(M: np.ndarray, vertices: list[int]) -> str:
 
     branch = branch_candidates[0]
     arm_lengths = []
-    for nb in (t for t in range(k) if sub[branch, t] != NO_EDGE):
+    for nb in (t for t in range(k) if adj[branch, t]):
         length, prev, cur = 1, branch, nb
         while True:
-            nxt = [t for t in range(k) if sub[cur, t] != NO_EDGE and t != prev]
+            nxt = [t for t in range(k) if adj[cur, t] and t != prev]
             if not nxt:
                 break
             prev, cur = cur, nxt[0]
