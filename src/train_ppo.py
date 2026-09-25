@@ -50,6 +50,9 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+import os
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE") #Stops library conflict error on Windows
+
 project_root = Path.cwd().resolve()
 while not (project_root / "src").exists() and project_root != project_root.parent:
     project_root = project_root.parent
