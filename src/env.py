@@ -4,18 +4,17 @@ Coxeter diagrams by single-edge edits.
 
 State
 -----
-The state is a labelled diagram on N = 8 vertices, in exactly the
+The state is a labelled diagram on N vertices (default 8), in exactly the
 representation used by coxeter.py: a symmetric (N, N) int64 array with
 values in LABELS = (2, 3, 4, 6) off the diagonal (2 == "no edge") and 0 on
-the diagonal. N is fixed at 8 project-wide (Diretrizes.txt); nothing below
-is written to generalise to other N by design.
+the diagonal. N is fixed for each environment instance.
 
 Action space
 ------------
 A single discrete action combines "which unordered vertex pair" and "which
 label to write there" (Diretrizes.txt explicitly rejects factoring this
 into two sequential decisions as unneeded complexity at this scale). There
-are C(8, 2) = 28 pairs and 4 labels, so `NUM_ACTIONS = 28 * 4 = 112`. The
+are C(N, 2) pairs and 4 labels, so `NUM_ACTIONS = C(N, 2) * 4`. The
 encoding
 
     action = pair_index * len(LABELS) + label_index
@@ -79,7 +78,7 @@ from src.coxeter import (
 )
 from src.datagen import sample_diagram, DATASET_A_P_NONE, DATASET_B_P_NONE
 
-N_DEFAULT = 8  # fixed project-wide (Diretrizes.txt)
+N_DEFAULT = 8  # default; training runs may select another N via --n
 
 _PAIRS: dict[int, list[tuple[int, int]]] = {}
 
@@ -94,7 +93,7 @@ def pairs_for(n: int) -> list[tuple[int, int]]:
 
 
 def num_actions(n: int) -> int:
-    """C(n, 2) * len(LABELS): 112 for the project's fixed n = 8."""
+    """C(n, 2) * len(LABELS): 112 at the default n = 8."""
     return len(pairs_for(n)) * len(LABELS)
 
 
@@ -243,7 +242,7 @@ if __name__ == "__main__":
 
     # encode_action / decode_action must be mutual inverses over the whole
     # action space, and num_actions must match C(n,2) * len(LABELS).
-    assert num_actions(n) == 28 * 4 == 112
+    assert num_actions(n) == len(pairs_for(n)) * len(LABELS)
     for a in range(num_actions(n)):
         i, j, lab = decode_action(a, n)
         pair_idx = pairs_for(n).index((i, j))
@@ -274,9 +273,9 @@ if __name__ == "__main__":
     print("step(): writes exactly the requested edge; success/terminated consistent")
 
     # A no-op edit on an already-spherical diagram must terminate successfully.
-    A8 = diagram_from_edges(n, [(k, k + 1, 3) for k in range(n - 1)])  # A_8, a path
-    assert is_spherical(A8)
-    env.state = A8.copy()
+    A_n = diagram_from_edges(n, [(k, k + 1, 3) for k in range(n - 1)])  # A_n, a path
+    assert is_spherical(A_n)
+    env.state = A_n.copy()
     a_noop = encode_action(pair_idx=0, label=3)  # rewrite (0,1) with its own label
     _, reward, terminated, truncated, info = env.step(a_noop)
     assert terminated and info.success and not truncated

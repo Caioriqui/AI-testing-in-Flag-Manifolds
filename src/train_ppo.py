@@ -4,7 +4,10 @@ edit a Coxeter diagram, one (pair, label) at a time, into a spherical one.
 
 This is a plain script run from a terminal:
 
-    $ python -m src.train_ppo --total-timesteps 2000000
+    $ python -m src.train_ppo --total-timesteps 2000000 --n 8
+
+The number of vertices is fixed for one training run and defaults to 8;
+pass `--n` to use another value (at least 2).
 
 never executed from inside a notebook -- Diretrizes.txt reserves the
 notebook (notebooks/02_train_rl.ipynb) for loading a finished checkpoint
@@ -17,8 +20,8 @@ Design choices, tracing back to Diretrizes.txt
 ------------------------------------------------
 - Reward: dense, `spherical_margin` of the state after every step, already
   squashed by tanh inside env.py -- not a difference reward, not sparse.
-- Action space: one categorical distribution of size C(8,2)*4 = 112
-  (env.py), not a two-stage factorisation.
+- Action space: one categorical distribution of size C(n,2)*4 (env.py),
+    not a two-stage factorisation.
 - Policy: the hand-rolled GNN of policy.py, no external GNN library.
 - Priority: training stability above every other consideration. Concretely:
     * advantages are estimated with GAE(lambda) (reduces variance) and
@@ -384,6 +387,13 @@ def train(config: PPOConfig) -> Path:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Train PPO on Objective 1 (spherical Coxeter diagrams).")
+    p.add_argument(
+        "--n",
+        type=_n_at_least_two,
+        default=N_DEFAULT,
+        metavar="N",
+        help=f"number of vertices for this run (integer >= 2; default: {N_DEFAULT})",
+    )
     p.add_argument("--total-timesteps", type=int, default=PPOConfig.total_timesteps)
     p.add_argument("--n-envs", type=int, default=PPOConfig.n_envs)
     p.add_argument("--rollout-steps", type=int, default=PPOConfig.rollout_steps)
@@ -395,9 +405,21 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def _n_at_least_two(value: str) -> int:
+    """Parse a vertex count, rejecting values outside the supported domain."""
+    try:
+        n = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("N must be an integer greater than or equal to 2") from exc
+    if n < 2:
+        raise argparse.ArgumentTypeError("N must be greater than or equal to 2")
+    return n
+
+
 if __name__ == "__main__":
     args = parse_args()
     config = PPOConfig(
+        n=args.n,
         total_timesteps=args.total_timesteps,
         n_envs=args.n_envs,
         rollout_steps=args.rollout_steps,

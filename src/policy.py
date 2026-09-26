@@ -2,12 +2,13 @@
 policy.py -- hand-rolled graph neural network actor-critic for
 Objective 1 (MM845). No PyTorch Geometric (or any other GNN library) is
 used, per Diretrizes.txt: every message-passing step below is plain
-PyTorch tensor algebra over the fixed N = 8 vertex graph.
+PyTorch tensor algebra over a graph whose N is fixed for each model
+(default 8).
 
-Because N is fixed and small, the network never has to handle a variable
-number of nodes, padding, or batching machinery beyond an ordinary leading
-batch dimension -- that is exactly what makes a manual implementation this
-short reasonable instead of a false economy.
+Because N is fixed for each model, the network never has to handle a
+variable number of nodes, padding, or batching machinery beyond an ordinary
+leading batch dimension -- that is exactly what makes a manual
+implementation this short reasonable instead of a false economy.
 
 Architecture
 ------------
@@ -200,7 +201,7 @@ if __name__ == "__main__":
     batch = np.stack(states)  # (5, N, N)
 
     logits, value = model(batch)
-    assert logits.shape == (5, model.num_actions) == (5, 112)
+    assert logits.shape == (5, model.num_actions) == (5, num_actions(n))
     assert value.shape == (5,)
     print("forward shapes OK:", logits.shape, value.shape)
 
