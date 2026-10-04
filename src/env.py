@@ -132,6 +132,12 @@ N_MAX = 8  # fixed project-wide maximum (Diretrizes.txt); episodes may use n_act
 
 _PAIRS: dict[int, list[tuple[int, int]]] = {}
 
+CURRICULUM_STAGES: tuple[tuple[int, ...], ...] = (
+    (3, 4, 5),
+    (3, 4, 5, 6),
+    (3, 4, 5, 6, 7),
+    (3, 4, 5, 6, 7, 8),
+)
 
 def pairs_for(n: int) -> list[tuple[int, int]]:
     """Cached `pair_index_list(n)` -- the fixed ordering of vertex pairs

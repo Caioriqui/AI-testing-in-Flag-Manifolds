@@ -100,19 +100,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from src.env import N_MAX, VecDynkinEnv
+from src.env import N_MAX, VecDynkinEnv, CURRICULUM_STAGES
 from src.policy import DynkinGNN
 
 # Cumulative curriculum stages over n_active -- see module docstring. Each
 # stage's set is a superset of the previous one, and N_MAX=8 always appears
 # in the last stage, so the fully-trained agent is evaluated (analyze.py)
 # on exactly the same maximum size the project commits to (Diretrizes.txt).
-CURRICULUM_STAGES: tuple[tuple[int, ...], ...] = (
-    (3, 4, 5),
-    (3, 4, 5, 6),
-    (3, 4, 5, 6, 7),
-    (3, 4, 5, 6, 7, 8),
-)
 
 
 @dataclass
