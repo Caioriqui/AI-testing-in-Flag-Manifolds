@@ -1,0 +1,14 @@
+name: iaflag
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - jupyterlab
+  - matplotlib
+  - numpy
+  - pandas
+  - sympy
+  - ipykernel
+  - networkx
+  - scikit-learn
+prefix: D:\Miniforge3\envs\iaflag
