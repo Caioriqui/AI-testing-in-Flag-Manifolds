@@ -65,7 +65,9 @@ Files under `results/` come from different branches and runs; identify an experi
 
 ## Environment setup
 
-The environment is specified in `environment.yml` and managed with [conda](https://docs.conda.io) (we recommend [Miniforge](https://github.com/conda-forge/miniforge#download)). Python 3.12, NumPy, PyTorch, pandas, Matplotlib and JupyterLab are the main dependencies.
+The environment is specified in `environment.yml` and managed with [conda](https://docs.conda.io) (we recommend [Miniforge](https://github.com/conda-forge/miniforge#download)). Setup has two steps: create the conda environment, then install PyTorch.
+
+### 1. Create the conda environment
 
 From the repository root:
 
@@ -75,8 +77,27 @@ conda activate iaflag
 ```
 
 - **Windows:** run these commands in the **Miniforge Prompt**, not in plain PowerShell.
-- Run `conda activate` again in every new terminal before working on the project.
-- If you change the environment, update the file with `conda env export --from-history > environment.yml`. Note that `--from-history` lists only packages installed with `conda`, so packages installed with `pip` (typically PyTorch, if installed as `pip install torch`) must be kept under a `pip:` section by hand.
+- Run `conda activate iaflag` again in every new terminal before working on the project.
+
+### 2. Install PyTorch (separately)
+
+PyTorch is **not** installed by `environment.yml`: the right build depends on your hardware, so you must install it yourself, with the `iaflag` environment active.
+
+**CPU only** (laptops; enough to run everything in this project):
+
+```bash
+pip install torch
+```
+
+**NVIDIA GPU (Linux/Windows):** use the selector at <https://pytorch.org/get-started/locally/> (choose *Pip*) to get the command matching your CUDA version, for example:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu124
+```
+
+**Apple Silicon (macOS):** the plain `pip install torch` above is enough.
+
+`src/train_ppo.py` uses a CUDA GPU automatically when one is available and runs on CPU otherwise. The model is small, so CPU training is fine.
 
 Verify the installation:
 
@@ -84,12 +105,27 @@ Verify the installation:
 python -c "import numpy, torch, pandas, matplotlib; print(numpy.__version__, torch.__version__)"
 ```
 
-**PyTorch and GPUs.** The project runs on CPU. If you want CUDA, install the matching build following the [PyTorch selector](https://pytorch.org/get-started/locally/) after creating the environment. On Windows, `train_ppo.py` sets `KMP_DUPLICATE_LIB_OK=TRUE` to avoid a common OpenMP library conflict.
+You should see two version numbers and no error. If `import torch` fails with `ModuleNotFoundError`, you are probably in the wrong environment: check that your prompt starts with `(aigeo)`.
 
-**Notebook kernel.** If the notebooks do not see the environment, register it once:
+On Windows, `train_ppo.py` sets `KMP_DUPLICATE_LIB_OK=TRUE` to avoid a common OpenMP library conflict.
+
+### Notebook kernel
+
+If the notebooks do not see the environment, register it once:
 
 ```bash
-python -m ipykernel install --user --name aigeo --display-name "Python (aigeo)"
+python -m ipykernel install --user --name iaflag --display-name "Python (iaflag)"
+```
+
+### Updating the environment file
+
+After installing a new package with `conda`, update the file with:
+
+```bash
+conda env export --from-history > environment.yml
+```
+
+`--from-history` lists only packages installed with `conda`, so anything installed with `pip` (such as PyTorch) is left out on purpose.
 ```
 
 ## Quick sanity checks
@@ -128,7 +164,8 @@ python -m src.train_ppo --dataset B --n 8 --max-episode-steps 60 --seed 0 --tota
 
 ```bash
 git switch variable-N
-python -m src.train_ppo --dataset A --seed 0 --total-timesteps 2000000 --checkpoint-dir results/A_seed0_curriculum
+python -m src.train_ppo --dataset A --seed 0 --total-timesteps 2000000 --checkpoint-dir results/A_seed0
+python -m src.train_ppo --dataset B --seed 0 --total-timesteps 2000000 --checkpoint-dir results/A_seed0
 ```
 
 The curriculum options are `--curriculum-success-threshold` (default 0.7), `--curriculum-window-updates` (20) and `--curriculum-min-updates-per-stage` (20). The vertex count is sampled uniformly from the current stage, and earlier stages are never dropped.
