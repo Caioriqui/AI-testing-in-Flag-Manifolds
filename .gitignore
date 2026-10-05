@@ -217,6 +217,16 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-#Other
-results/
+#Results
+results/*
+!results/A_seed0/
+results/A_seed0/*
+!results/A_seed0/checkpoint_latest.pt
+!results/A_seed0/train_log.npz
+!results/B_seed0/
+results/B_seed0/*
+!results/B_seed0/checkpoint_latest.pt
+!results/B_seed0/train_log.npz
+
+#Data
 data/
